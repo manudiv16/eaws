@@ -1,0 +1,51 @@
+name: eaws
+help: Simple aws cli
+version: 0.1.0
+
+dependencies:
+  - jq
+  - aws
+  - fzf
+
+flags:
+  - long: --verbose
+    short: -v
+    help: Print everything
+
+  - long: --profile
+    short: -p
+    arg: profile
+    required: true
+commands:
+  - name: logs
+    alias: l
+    help: Show logs from cloudwatch
+    flags:
+      - long: --project
+        short: -j
+        help: Project to show information from
+
+    examples:
+      - "aws logs query: visualize logs in insights"
+      - "aws logs view: view the logs of the selected container"
+
+    commands:
+      - name: query
+        alias: q
+        help: use cloudwatch insights
+
+      - name: view
+        alias: v
+        help: Show logstream
+
+  - name: container
+    alias: c
+    help: Helper command to manage ecs containers
+    commands:
+      - name: list
+        alias: l
+        help: list all container in clusters
+
+      - name: connect
+        alias: c
+        help: connect to some container
