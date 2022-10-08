@@ -13,17 +13,17 @@ prof_clu="--profile ${profile} --cluster ${cluster}"
 service=$(aws ecs list-services ${prof_clu} | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | fzf ) 
 
 # Get task id
-task=$(aws ecs list-tasks ${prof_clu} --service-name ${service} | jq '.taskArns[]'| sed 's/"//g'| fzf  )
+task=$(aws ecs list-tasks ${prof_clu} --service-name ${service} | jq '.taskArns[]'| sed 's/"//g'| fzf -1 )
 
 # container
 describe_container=$(aws ecs describe-tasks ${prof_clu} --tasks ${task})
 
 conteiner_instance_id=$( echo $describe_container | jq -r '.tasks[0].containerInstanceArn')
 
-container_runtime_id=$( echo $describe_container | jq '.tasks[0].containers[] | "\(.name) \(.lastStatus) \(.healthStatus) \(.runtimeId)"' | fzf | awk '{print $NF}'| sed 's/"//g' )
+container_runtime_id=$( echo $describe_container | jq '.tasks[0].containers[] | "\(.name) \(.lastStatus) \(.healthStatus) \(.runtimeId)"' | fzf -1| awk '{print $NF}'| sed 's/"//g' )
 
 ec2_instance=$( aws ecs describe-container-instances ${prof_clu} --container-instances ${conteiner_instance_id} | jq -r '.containerInstances[0].ec2InstanceId' ) 
-echo $ec2_instance
+
 # Get target ssm
 document_name="AWS-StartInteractiveCommand"
 parameters_command="sudo docker exec -it ${container_runtime_id} sh"
