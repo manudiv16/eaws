@@ -1,4 +1,11 @@
-echo "# this file is located in 'src/container_list_command.sh'"
-echo "# code for 'aws container list' goes here"
-echo "# you can edit it freely and regenerate (it will not be overwritten)"
-inspect_args
+check_profile 
+
+# Get cluster
+cluster=$(aws ecs list-clusters |jq -r '.clusterArns[]'| awk -F'/' '{print $2}'| fzf)
+
+prof_clu="--cluster ${cluster}"
+
+# Get service
+aws ecs list-services ${prof_clu} | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | awk 'NF'  
+
+

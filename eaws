@@ -57,8 +57,16 @@ eaws_usage() {
     echo
 
     # :flag.usage
-    echo "  --profile, -p PROFILE (required)"
+    echo "  --profile, -p PROFILE"
     printf "\n"
+    echo
+
+    # :command.usage_environment_variables
+    printf "Environment Variables:\n"
+
+    # :environment_variable.usage
+    echo "  AWS_PROFILE"
+    printf "    Set your API key\n"
     echo
 
   fi
@@ -323,6 +331,19 @@ inspect_args() {
 }
 
 # :command.user_lib
+# src/lib/check_profile.sh
+check_profile() {
+	if [ "${args[--profile]}" ];then
+		source assume ${args[--profile]}
+	elif [ "${AWS_PROFILE:-}" ]
+	then
+		source assume ${AWS_PROFILE:-}
+	else
+
+		source assume ${args[--profile]}
+	fi
+}
+
 # src/lib/colors.sh
 print_in_color() {
   local color="$1"
@@ -380,27 +401,30 @@ eaws_logs_view_command() {
 # :command.function
 eaws_container_list_command() {
   # src/container_list_command.sh
-  echo "# this file is located in 'src/container_list_command.sh'"
-  echo "# code for 'aws container list' goes here"
-  echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  inspect_args
+  check_profile
+
+  # Get cluster
+  cluster=$(aws ecs list-clusters |jq -r '.clusterArns[]'| awk -F'/' '{print $2}'| fzf)
+
+  prof_clu="--cluster ${cluster}"
+
+  # Get service
+  aws ecs list-services ${prof_clu} | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | awk 'NF'
 
 }
 
 # :command.function
 eaws_container_connect_command() {
   # src/container_connect_command.sh
-  echo "# this file is located in 'src/container_connect_command.sh'"
-  echo "# code for 'aws container connect' goes here"
-  profile="${args[--profile]}"
+  check_profile
 
   # Get cluster
-  cluster=$(aws ecs list-clusters --profile ${profile} |jq -r '.clusterArns[]'| awk -F'/' '{print $2}'| fzf)
+  cluster=$(aws ecs list-clusters |jq -r '.clusterArns[]'| awk -F'/' '{print $2}'| fzf)
 
-  prof_clu="--profile ${profile} --cluster ${cluster}"
+  prof_clu="--cluster ${cluster}"
 
   # Get service
-  service=$(aws ecs list-services ${prof_clu} | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | fzf )
+  service=$(aws ecs list-services ${prof_clu} | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | awk 'NF' | fzf )
 
   # Get task id
   task=$(aws ecs list-tasks ${prof_clu} --service-name ${service} | jq '.taskArns[]'| sed 's/"//g'| fzf -1 )
@@ -418,10 +442,7 @@ eaws_container_connect_command() {
   document_name="AWS-StartInteractiveCommand"
   parameters_command="sudo docker exec -it ${container_runtime_id} sh"
 
-  aws ssm start-session --profile ${profile} --target ${ec2_instance} --document-name ${document_name} --parameters command="sudo docker exec -ti ${container_runtime_id} sh"
-
-  # echo "# you can edit it freely and regenerate (it will not be overwritten)"
-  # inspect_args
+  aws ssm start-session --target ${ec2_instance} --document-name ${document_name} --parameters command="sudo docker exec -ti ${container_runtime_id} sh"
 
 }
 
@@ -533,12 +554,6 @@ parse_requirements() {
 
     esac
   done
-
-  # :command.required_flags_filter
-  if [[ -z ${args[--profile]+x} ]]; then
-    printf "missing required flag: --profile, -p PROFILE\n" >&2
-    exit 1
-  fi
 
 }
 

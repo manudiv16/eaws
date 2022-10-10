@@ -6,6 +6,11 @@ dependencies:
   - jq
   - aws
   - fzf
+  - granted
+
+environment_variables:
+  - name: aws_profile
+    help: Set your API key
 
 flags:
   - long: --verbose
@@ -15,7 +20,7 @@ flags:
   - long: --profile
     short: -p
     arg: profile
-    required: true
+
 commands:
   - name: logs
     alias: l
