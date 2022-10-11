@@ -36,6 +36,7 @@ eaws_usage() {
   printf "Commands:\n"
   echo "  logs        Show logs from cloudwatch"
   echo "  container   Helper command to manage ecs containers"
+  echo "  pipeline    Show status pipeline"
   echo
 
   # :command.long_usage
@@ -66,7 +67,7 @@ eaws_usage() {
 
     # :environment_variable.usage
     echo "  AWS_PROFILE"
-    printf "    Set your API key\n"
+    printf "    Set your aws profile\n"
     echo
 
   fi
@@ -286,6 +287,50 @@ eaws_container_connect_usage() {
   fi
 }
 
+# :command.usage
+eaws_pipeline_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "eaws pipeline - Show status pipeline\n"
+    echo
+
+  else
+    printf "eaws pipeline - Show status pipeline\n"
+    echo
+
+  fi
+
+  printf "Alias: p\n"
+  echo
+
+  printf "Usage:\n"
+  printf "  eaws pipeline [OPTIONS]\n"
+  printf "  eaws pipeline --help | -h\n"
+  echo
+
+  # :command.long_usage
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_flags
+    # :flag.usage
+    echo "  --debug, -d"
+    printf "    Inspect each step\n"
+    echo
+
+    # :command.usage_examples
+    printf "Examples:\n"
+    printf "  eaws pipeline -d,--debug\n"
+    printf "  eaws pipeline [--profile <profile>]\n"
+    echo
+
+  fi
+}
+
 # :command.normalize_input
 normalize_input() {
   local arg flags
@@ -332,9 +377,11 @@ inspect_args() {
 
 # :command.user_lib
 # src/lib/check_profile.sh
+#!/usr/bin/env bash
+# shellcheck source=/dev/null
 check_profile() {
 	if [ "${args[--profile]}" ];then
-		source assume ${args[--profile]}
+		source assume "${args[--profile]}"
 	elif ! [ "${AWS_PROFILE:-}" ]
 	then
 		source assume
@@ -404,7 +451,7 @@ eaws_container_list_command() {
   # Get cluster
   cluster=$(aws ecs list-clusters |jq -r '.clusterArns[]'| awk -F'/' '{print $2}'| fzf)
   # Get service
-  aws ecs list-services --cluster ${cluster} | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | awk 'NF'
+  aws ecs list-services --cluster "${cluster}" | jq '.serviceArns[]' | awk -F'/' '{print $3}'| sed 's/"//g' | awk 'NF'
 
 }
 
@@ -437,6 +484,37 @@ eaws_container_connect_command() {
   document_name="AWS-StartInteractiveCommand"
 
   aws ssm start-session --target ${ec2_instance} --document-name ${document_name} --parameters command="sudo docker exec -ti ${container_runtime_id} sh"
+
+}
+
+# :command.function
+eaws_pipeline_command() {
+  # src/pipeline_command.sh
+  #!/usr/bin/env bash
+  check_profile
+
+  pipeline_name=$( aws codepipeline list-pipelines | jq ".pipelines[].name" | sed 's/"//g' | fzf )
+
+  pipeline=$( aws codepipeline get-pipeline-state --name "$pipeline_name" )
+
+  if ! [[ "${args[--debug]}" ]]
+  then
+  	for stage in $(echo "$pipeline" | jq -r '.stageStates[].stageName')
+  	do
+  		stage_state=$(echo "$pipeline" | jq -r '.stageStates[] | select(.stageName == "'"$stage"'")')
+  		echo "$stage_state" | jq -r '. | "'"$(green_bold "\(.stageName)")"' - '"$(yellow "\(.latestExecution.status)")"'\n"'
+  		echo "$stage_state" | jq -r '.actionStates[] | "\(.actionName) - '"$(yellow "\(.latestExecution.status)")"' '"$(cyan "\(.latestExecution.lastStatusChange)")"' "'
+  		echo ""
+  	done
+  fi
+
+  p_step=$(echo "$pipeline" | jq -r '.stageStates[] | "\(.stageName) - \(.latestExecution.status)" ' | fzf | awk '{print $1}' )
+  step=$(echo "$pipeline" | jq -r '.stageStates[] | select(.stageName == "'"$p_step"'")')
+  p_action=$(echo "$step" |  jq -r '.actionStates[] | "\(.actionName) - \(.latestExecution.status)"' | fzf | awk '{print $1}' )
+  action=$(echo "$step" | jq -r '.actionStates[] | select(.actionName == "'"$p_action"'")')
+
+  echo "$action" \
+  	| jq -r '. | "action name:'"$(green_bold "\(.actionName)")"'\nstatus: '"$(green_bold "\(.latestExecution.status)")"'\ndescription: '"$(green_bold "\(.latestExecution.errorDetails.message)")"'\nURL: '"$(green_bold "\(.entityUrl)")"'"'
 
 }
 
@@ -516,6 +594,13 @@ parse_requirements() {
     action="container"
     shift
     eaws_container_parse_requirements "$@"
+    shift $#
+    ;;
+
+  pipeline | p )
+    action="pipeline"
+    shift
+    eaws_pipeline_parse_requirements "$@"
     shift $#
     ;;
 
@@ -853,6 +938,51 @@ eaws_container_connect_parse_requirements() {
 
 }
 
+# :command.parse_requirements
+eaws_pipeline_parse_requirements() {
+  # :command.fixed_flags_filter
+  case "${1:-}" in
+  --help | -h )
+    long_usage=yes
+    eaws_pipeline_usage
+    exit
+    ;;
+
+  esac
+
+  # :command.command_filter
+  action="pipeline"
+
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+    # :flag.case
+    --debug | -d )
+
+      # :flag.case_no_arg
+      args[--debug]=1
+      shift
+      ;;
+
+    -?* )
+      printf "invalid option: %s\n" "$key" >&2
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      # :command.parse_requirements_case_simple
+      printf "invalid argument: %s\n" "$key" >&2
+      exit 1
+
+      ;;
+
+    esac
+  done
+
+}
+
 # :command.initialize
 initialize() {
   version="0.1.0"
@@ -917,6 +1047,14 @@ run() {
       eaws_container_connect_usage
     else
       eaws_container_connect_command
+    fi
+
+  elif [[ $action == "pipeline" ]]; then
+    if [[ ${args[--help]:-} ]]; then
+      long_usage=yes
+      eaws_pipeline_usage
+    else
+      eaws_pipeline_command
     fi
 
   elif [[ $action == "root" ]]; then

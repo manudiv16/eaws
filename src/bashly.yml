@@ -54,3 +54,16 @@ commands:
       - name: connect
         alias: c
         help: connect to some container
+
+  - name: pipeline
+    alias: p
+    help: Show status pipeline
+
+    flags:
+      - long: --debug
+        short: -d
+        help: Inspect each step
+
+    examples:
+      - eaws pipeline -d,--debug
+      - eaws pipeline [--profile <profile>]
