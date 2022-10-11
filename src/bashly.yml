@@ -10,7 +10,7 @@ dependencies:
 
 environment_variables:
   - name: aws_profile
-    help: Set your API key
+    help: Set your aws profile
 
 flags:
   - long: --verbose
