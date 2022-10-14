@@ -480,7 +480,7 @@ eaws_container_connect_command() {
 
   # Get service
   service=$(aws ecs \
-  		list-services "${short_cluster}" \
+  		list-services ${short_cluster} \
   		| jq '.serviceArns[]' \
   		| awk -F'/' '{print $3}' \
   		| sed 's/"//g' \
@@ -489,37 +489,37 @@ eaws_container_connect_command() {
 
   # Get task id
   task=$( aws ecs \
-  		list-tasks "${short_cluster}" \
-  		--service-name "${service}" \
+  		list-tasks ${short_cluster} \
+  		--service-name ${service} \
   		| jq '.taskArns[]' \
   		| sed 's/"//g' \
   		| fzf -1 )
 
   # container
   describe_container=$( aws ecs \
-  		describe-tasks "${short_cluster}" \
-  		--tasks "${task}" )
+  		describe-tasks ${short_cluster} \
+  		--tasks ${task} )
 
-  conteiner_instance_id=$( echo "$describe_container" \
+  conteiner_instance_id=$( echo ${describe_container} \
   		| jq -r '.tasks[0].containerInstanceArn' )
 
-  container_runtime_id=$( echo "$describe_container" \
+  container_runtime_id=$( echo ${describe_container} \
   		| jq '.tasks[0].containers[] | "\(.name) \(.lastStatus) \(.healthStatus) \(.runtimeId)"' \
   		| fzf -1 \
   		| awk '{print $NF}' \
   		| sed 's/"//g' )
 
   ec2_instance=$( aws ecs \
-  		describe-container-instances "${short_cluster}" \
-  		--container-instances "${conteiner_instance_id}" \
+  		describe-container-instances ${short_cluster} \
+  		--container-instances ${conteiner_instance_id} \
   		| jq -r '.containerInstances[0].ec2InstanceId' )
 
   # Get target ssm
   document_name="AWS-StartInteractiveCommand"
 
   aws ssm start-session \
-  		--target "${ec2_instance}" \
-  		--document-name "${document_name}" \
+  		--target ${ec2_instance} \
+  		--document-name ${document_name} \
   		--parameters command="sudo docker exec -ti ${container_runtime_id} sh"
 
 }
@@ -536,36 +536,36 @@ eaws_pipeline_command() {
   		| fzf )
 
   pipeline=$( aws codepipeline get-pipeline-state \
-  		--name "$pipeline_name" )
+  		--name ${pipeline_name} )
 
-  if ! [[ "${args[--debug]}" ]]
+  if ! [[ ${args[--debug]} ]]
   then
-  	for stage in $(echo "$pipeline" | jq -r '.stageStates[].stageName')
+  	for stage in $(echo ${pipeline} | jq -r '.stageStates[].stageName')
   	do
-  		stage_state=$(echo "$pipeline" \
+  		stage_state=$(echo ${pipeline} \
   				| jq -r '.stageStates[] | select(.stageName == "'"$stage"'")')
-  		echo "$stage_state" \
+  		echo ${stage_state} \
   				| jq -r '. | "'"$(green_bold "\(.stageName)")"' - '"$(yellow "\(.latestExecution.status)")"'\n"'
-  		echo "$stage_state" \
+  		echo ${stage_state} \
   				| jq -r '.actionStates[] | "\(.actionName) - '"$(yellow "\(.latestExecution.status)")"' '"$(cyan "\(.latestExecution.lastStatusChange)")"' "'
   		echo ""
   	done
   fi
 
-  p_step=$(echo "$pipeline" \
+  p_step=$(echo ${pipeline} \
   		| jq -r '.stageStates[] | "\(.stageName) - \(.latestExecution.status)" ' \
   		| fzf \
   		| awk '{print $1}' )
-  step=$(echo "$pipeline" \
+  step=$(echo ${pipeline} \
   		| jq -r '.stageStates[] | select(.stageName == "'"$p_step"'")')
-  p_action=$(echo "$step" \
+  p_action=$(echo ${step} \
   		|  jq -r '.actionStates[] | "\(.actionName) - \(.latestExecution.status)"' \
   		| fzf \
   		| awk '{print $1}' )
-  action=$(echo "$step" \
+  action=$(echo ${step} \
   		| jq -r '.actionStates[] | select(.actionName == "'"$p_action"'")')
 
-  echo "$action" \
+  echo ${action} \
   		| jq -r '. | "action name:'"$(green_bold "\(.actionName)")"'\nstatus: '"$(green_bold "\(.latestExecution.status)")"'\ndescription: '"$(green_bold "\(.latestExecution.errorDetails.message)")"'\nURL: '"$(green_bold "\(.entityUrl)")"'"'
 
 }
@@ -1037,7 +1037,7 @@ eaws_pipeline_parse_requirements() {
 
 # :command.initialize
 initialize() {
-  version="0.1.0"
+  version="0.2.0"
   long_usage=''
   set -e
 
