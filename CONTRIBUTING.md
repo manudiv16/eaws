@@ -15,8 +15,8 @@ This guide covers how to set up, build, and contribute to the EAWS CLI project.
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/manudiv16/eaws-go.git
-   cd eaws-go
+   git clone https://github.com/manudiv16/eaws.git
+   cd eaws
    ```
 
 2. **Install dependencies**:
@@ -93,7 +93,7 @@ go vet ./...
 ## Project Structure
 
 ```
-eaws-go/
+eaws/
 ├── main.go                 # Entry point
 ├── cmd/                    # Cobra commands
 │   ├── root.go            # Root command

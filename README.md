@@ -22,7 +22,7 @@ A simple AWS CLI tool built with Go and Cobra that provides easy access to AWS s
 
 **For macOS and Linux:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws-go/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws/main/install.sh | bash
 ```
 
 This script will:
@@ -35,7 +35,7 @@ This script will:
 
 ```bash
 # Add the tap
-brew tap manudiv16/eaws-go
+brew tap manudiv16/eaws
 
 # Install
 brew install eaws
@@ -46,7 +46,7 @@ brew upgrade eaws
 
 ### Manual Installation
 
-1. **Download the binary** from the [releases page](https://github.com/manudiv16/eaws-go/releases)
+1. **Download the binary** from the [releases page](https://github.com/manudiv16/eaws/releases)
 2. **Extract** (if needed) and **move** to your PATH:
    ```bash
    # Example for Linux
@@ -59,8 +59,8 @@ brew upgrade eaws
 
 ```bash
 # Clone the repository
-git clone https://github.com/manudiv16/eaws-go.git
-cd eaws-go
+git clone https://github.com/manudiv16/eaws.git
+cd eaws
 
 # Build and install
 make install-local
@@ -73,7 +73,7 @@ make install-local-dev
 
 ```bash
 # Using the uninstall script
-curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws-go/main/uninstall.sh | bash
+curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws/main/uninstall.sh | bash
 
 # Or manually
 sudo rm /usr/local/bin/eaws

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # EAWS CLI Installer for Unix Systems (macOS and Linux)
-# Usage: curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws-go/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws/main/install.sh | bash
 
 set -e
 
@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 REPO_OWNER="manudiv16"
-REPO_NAME="eaws-go"
+REPO_NAME="eaws"
 BINARY_NAME="eaws"
 INSTALL_DIR="/usr/local/bin"
 GITHUB_RELEASES_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases"

@@ -60,13 +60,13 @@ jobs:
         body: |
           ## Changes
           
-          See [CHANGELOG.md](https://github.com/manudiv16/eaws-go/blob/main/CHANGELOG.md) for detailed changes.
+          See [CHANGELOG.md](https://github.com/manudiv16/eaws/blob/main/CHANGELOG.md) for detailed changes.
           
           ## Installation
           
           ### Quick Install (Unix/Linux/macOS)
           ```bash
-          curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws-go/main/install.sh | bash
+          curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws/main/install.sh | bash
           ```
           
           ### Manual Installation
@@ -78,7 +78,7 @@ jobs:
           
           ### Homebrew (macOS/Linux)
           ```bash
-          brew tap manudiv16/eaws-go
+          brew tap manudiv16/eaws
           brew install eaws
           ```
           

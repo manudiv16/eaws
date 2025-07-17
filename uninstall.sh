@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # EAWS CLI Uninstaller for Unix Systems
-# Usage: curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws-go/main/uninstall.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws/main/uninstall.sh | bash
 
 set -e
 
