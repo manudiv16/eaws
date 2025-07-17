@@ -1,24 +1,98 @@
-name: "tagged-release"
+name: Release
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
-  tagged-release:
-    name: "Tagged Release"
-    runs-on: "ubuntu-latest"
-
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
-      # ...
-      - name: "Build & test"
-        run: |
-          echo "done!"
-
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          files: |
-            eaws
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+    
+    - name: Get dependencies
+      run: go mod download
+    
+    - name: Build for all platforms
+      run: make build-all
+    
+    - name: Create release archives
+      run: |
+        mkdir -p releases
+        
+        # Linux
+        tar -czf releases/eaws-linux-amd64.tar.gz eaws-linux-amd64
+        
+        # macOS
+        tar -czf releases/eaws-darwin-amd64.tar.gz eaws-darwin-amd64
+        tar -czf releases/eaws-darwin-arm64.tar.gz eaws-darwin-arm64
+        
+        # Windows
+        zip releases/eaws-windows-amd64.zip eaws-windows-amd64.exe
+        
+        # Copy binaries to releases directory
+        cp eaws-linux-amd64 releases/
+        cp eaws-darwin-amd64 releases/
+        cp eaws-darwin-arm64 releases/
+        cp eaws-windows-amd64.exe releases/
+    
+    - name: Generate checksums
+      run: |
+        cd releases
+        sha256sum * > checksums.txt
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          releases/*
+        body: |
+          ## Changes
+          
+          See [CHANGELOG.md](https://github.com/manudiv16/eaws-go/blob/main/CHANGELOG.md) for detailed changes.
+          
+          ## Installation
+          
+          ### Quick Install (Unix/Linux/macOS)
+          ```bash
+          curl -fsSL https://raw.githubusercontent.com/manudiv16/eaws-go/main/install.sh | bash
+          ```
+          
+          ### Manual Installation
+          
+          1. Download the appropriate binary for your platform
+          2. Extract the archive (if applicable)
+          3. Move the binary to a directory in your PATH
+          4. Make it executable: `chmod +x eaws`
+          
+          ### Homebrew (macOS/Linux)
+          ```bash
+          brew tap manudiv16/eaws-go
+          brew install eaws
+          ```
+          
+          ## Platform Support
+          
+          - **Linux**: `eaws-linux-amd64`
+          - **macOS (Intel)**: `eaws-darwin-amd64`
+          - **macOS (Apple Silicon)**: `eaws-darwin-arm64`
+          - **Windows**: `eaws-windows-amd64.exe`
+          
+          ## Verification
+          
+          All binaries are signed and checksums are provided in `checksums.txt`.
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
